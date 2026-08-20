@@ -23,7 +23,7 @@ A combined direct/extended dispatcher validation over the original 400-case rand
 - **0 correctness failures**.
 
 The one residual loss belongs to a narrow input subclass described in
-[`docs/SUPPORTED_SCOPE.md`](docs/SUPPORTED_SCOPE.md).
+[`SUPPORTED_SCOPE.md`](SUPPORTED_SCOPE.md)
 
 ## Precision scaling
 
@@ -69,12 +69,11 @@ intentionally omitted.
 
 ## Documentation
 
-- [`Public technical overview`](docs/PUBLIC_TECHNICAL_OVERVIEW.md)
-- [`Performance results`](docs/PERFORMANCE_RESULTS.md)
-- [`Validation summary`](docs/VALIDATION_SUMMARY.md)
-- [`Supported scope and limitations`](docs/SUPPORTED_SCOPE.md)
-- [`Benchmark environment and fairness`](docs/ENVIRONMENT_AND_FAIRNESS.md)
-
+- [`Public technical overview`](PUBLIC_TECHNICAL_OVERVIEW.md)
+- [`Performance results`](PERFORMANCE_RESULTS.md)
+- [`Validation summary`](VALIDATION_SUMMARY.md)
+- [`Supported scope and limitations`](SUPPORTED_SCOPE.md)
+- [`Benchmark environment and fairness`](ENVIRONMENT_AND_FAIRNESS.md)
 ## Status
 
 **Experimental prototype — validated on the documented test environment and input envelope.**
