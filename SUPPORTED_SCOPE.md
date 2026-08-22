@@ -36,9 +36,21 @@ It completed **10,000,000 / 10,000,000 calls** with zero invalid outputs and zer
 
 ## Implementation eligibility versus validated performance scope
 
-The implementation contains internal eligibility guards wider than the published benchmark region, including bounded denominator exponent, numerator bit length and magnitude. Those guards define where the cache implementation can execute; they do **not** mean that every point inside the wider implementation envelope has received the same benchmark and endurance coverage.
+The current SW6 cache implementation has explicit hard eligibility guards. For an exact dyadic `A/2^k`, the current guard requires:
 
-Accordingly, the public performance claim is limited to the actual tested regions above.
+- denominator exponent `0 <= k <= 64`;
+- numerator magnitude fitting within **64 bits**;
+- `bit_length(|A|) - k <= 20`.
+
+The last condition implies a current implementation magnitude ceiling of
+
+**`|a| < 2^20` (approximately 1,048,576)**,
+
+subject to the other numerator/denominator guards above. The same magnitude rule applies to positive and negative inputs.
+
+This **is an implementation ceiling, not a validated performance envelope**. Current comparative benchmark and endurance evidence extends only through `|a| < 100`. Inputs above 100 but below the implementation ceiling are therefore not rejected merely because they exceed the benchmark range, but they have not yet received the same published performance qualification.
+
+Accordingly, the public performance claim remains limited to the actual tested regions above.
 
 ## Precision
 
