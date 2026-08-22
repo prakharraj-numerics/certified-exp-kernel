@@ -2,74 +2,88 @@
 
 > **DRAFT — FOR REVIEW BEFORE PUBLIC RELEASE**
 
-All ratios below are:
+This file records the current benchmark set for the **signed-window-6 (SW6) cached EXP candidate**.
 
-`prototype wall-clock time / FLINT wall-clock time`
+All speedups are reported as:
 
-A ratio below 1.0 means the prototype was faster.
+`FLINT 3.6.0 time / SW6 time`
 
-## Release-boundary note
+A value greater than 1.0 means SW6 was faster.
 
-The **current canonical executable is the rigorous direct kernel only**. It does not yet include the later large-magnitude reduction/dispatch layer.
+## Benchmark design
 
-Therefore, the direct-kernel measurements below remain directly relevant to the current release line, while the later dispatcher and large-magnitude tables are **historical research-campaign evidence** and must not be presented as measurements of the current direct-only executable.
+Two deterministic exact-dyadic domains were tested at 10,000, 20,000 and 100,000 decimal digits:
 
-A current-build 5,000-digit smoke case at `a = 100` passed higher-precision Arb containment but had `ours / FLINT = 1.1874`, illustrating the known large-magnitude performance weakness of the present direct release.
+1. **unit domain:** 100 positive inputs in `(0,1)` and 100 negative inputs in `(-1,0)` at each precision, denominator `2^32`, seed `2026082202`;
+2. **wide domain:** 100 positive inputs in `(1,100)` and 100 negative inputs in `(-100,-1)` at each precision, denominator `2^20`, seed `2026082201`.
 
-## Precision scaling
+Each input was timed with five repetitions. SW6 and FLINT 3.6.0 were run on the same GitHub Actions job for each precision. The FLINT comparator was the public C-level `arb_exp` routine.
 
-A fixed representative set of six values was tested across precision.
+Correctness was a hard gate: every SW6 benchmark output had to pass exact-rounded agreement and an independent directed-MPFR certification check.
 
-| Decimal digits | Geometric-mean ratio | Median ratio | Win rate |
-|---:|---:|---:|---:|
-| 1,000 | 0.82 | 0.89 | 4 / 6 |
-| 2,000 | 0.75 | 0.77 | 5 / 6 |
-| 5,000 | 0.61 | 0.64 | 6 / 6 |
-| 10,000 | 0.47 | 0.49 | 6 / 6 |
-| 20,000 | 0.38 | 0.41 | 6 / 6 |
-| 50,000 | 0.36 | 0.37 | 6 / 6 |
-| 100,000 | 0.36 | 0.33 | 6 / 6 |
-| 200,000 | 0.33 | 0.29 | 6 / 6 |
+## Unit domain: `0 < |a| < 1`
 
-The documented campaign also tested 500,000 decimal digits and reported that the high-precision performance plateau continued rather than collapsing.
+### Steady-state aggregate speedup
 
-## Direct-kernel random exact-rational stress test
+| Digits | Positive | Negative |
+|---:|---:|---:|
+| 10,000 | **5.0869x** | **5.0894x** |
+| 20,000 | **5.5481x** | **5.4853x** |
+| 100,000 | **4.9064x** | **4.9601x** |
 
-At 100,000 decimal digits, the original direct-path campaign tested 400 fixed-seed random exact rationals, split evenly across four sign/magnitude strata.
+### Aggregate speedup including 1/200 of shared setup per call
 
-Against FLINT 3.6.0:
+| Digits | Positive | Negative |
+|---:|---:|---:|
+| 10,000 | **3.3037x** | **3.2611x** |
+| 20,000 | **3.5690x** | **3.5230x** |
+| 100,000 | **3.2145x** | **3.2396x** |
 
-- `0 < a < 1`: 100 / 100 wins; median ratio 0.25
-- `-1 < a < 0`: 100 / 100 wins; median ratio 0.29
-- `a > 1`: 99 / 100 wins; median ratio 0.60
-- `a < -1`: 100 / 100 wins; median ratio 0.61
+The unit-domain campaign recorded **600 / 600 steady-state wins** and **600 / 600 exact-rounded + directed-MPFR certified cases**.
 
-Total: **399 / 400 wins**, with zero correctness failures in that recorded campaign.
+## Wide domain: `1 < |a| < 100`
 
-These are direct-kernel results and are the closest broad historical performance layer to the current canonical direct release. They were produced in the documented historical environment, not by the currently packaged binary.
+### Steady-state aggregate speedup
 
-## Historical large-magnitude extension
+| Digits | Positive | Negative |
+|---:|---:|---:|
+| 10,000 | **7.1336x** | **7.4786x** |
+| 20,000 | **7.7109x** | **7.7258x** |
+| 100,000 | **7.2250x** | **7.2949x** |
 
-A later extension was tested specifically on difficult large-magnitude cases. A final simple dispatcher was then validated over the original 400-case set plus 12 additional integer cases spanning magnitudes from 1 to 10,000, both signs:
+### Aggregate speedup including 1/200 of shared setup per call
 
-**411 / 412 wins, zero correctness failures.**
+| Digits | Positive | Negative |
+|---:|---:|---:|
+| 10,000 | **4.0689x** | **4.1357x** |
+| 20,000 | **4.8963x** | **4.8765x** |
+| 100,000 | **4.6113x** | **4.6304x** |
 
-This **411 / 412** result belongs to the broader historical research campaign. The dispatcher responsible for it is **not present in the current canonical direct executable**.
+The wide-domain campaign produced **600 / 600 exact-rounded + directed-MPFR certified cases**. Every sign/precision aggregate block favored SW6.
 
-The extended path was tested on integer magnitudes from 1 through 10,000, both signs, and every tested integer case won in that campaign.
+## Combined current benchmark evidence
 
-A separate stratified set of 36 large-magnitude noninteger exact rationals, with magnitudes from 10 to 9,000 and both signs, converted all 8 direct-path losses in that set to wins under the extended path.
+Across the two final campaigns:
 
-A different retest, drawn from the earlier random campaign, contained one residual noninteger case with a power-of-two denominator that remained slower than FLINT. That historical weak subclass is documented separately in `SUPPORTED_SCOPE.md`.
+- benchmark cases: **1,200**;
+- certified cases: **1,200 / 1,200**;
+- tested precision: **10K, 20K, 100K decimal digits**;
+- signs: **positive and negative**;
+- tested magnitude regions: **`0 < |a| < 1` and `1 < |a| < 100`**;
+- threads: **1**.
 
-## Cold and warm behavior
+The strongest aggregate steady-state block in this set was approximately **7.73x** FLINT/SW6 at 20,000 digits in the negative wide-domain sample. The smallest current steady-state aggregate block was approximately **4.91x**, still in favor of SW6.
 
-For the historical direct path, cold and warm evaluation costs were close: documented one-time configuration cost was only about 4% of a representative 100,000-digit evaluation.
+## Setup interpretation
 
-The historical extended path could reuse a precision-specific intermediate across repeated queries. In one representative 10-query, 100,000-digit integer batch:
+SW6 builds a reusable precision/input-shape cache before repeated evaluation. The steady-state figures exclude that one-time cache construction from individual hot-path timings. To make the setup cost visible, the benchmark also reports an intentionally conservative amortization of **1/200 of total shared setup cost per call**, corresponding to the 200-case batch.
 
-- one-time reusable computation: approximately 0.0068 s
-- cold per-query cost: approximately 0.0134 s
-- warm per-query cost: approximately 0.0049 s
+The setup-amortized results remain favorable in every reported sign/precision block.
 
-This is a measured historical workload-specific result, not a universal throughput guarantee and not a capability claim for the present direct-only canonical executable.
+## Endurance throughput is not a benchmark ratio
+
+The separate 10M endurance run at 10,000 digits produced **8,122.7 calls/s** over a mixed four-region workload. That figure belongs to a different qualification harness and must not be compared directly with the FLINT benchmark ratios above.
+
+## Historical results
+
+Earlier precision-scaling, direct-kernel, recovered-dyadic and dispatcher campaigns remain useful provenance. They are no longer the current headline performance evidence and should be labeled **historical** if cited.
