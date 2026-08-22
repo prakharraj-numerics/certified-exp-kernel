@@ -1,85 +1,67 @@
 # Supported Scope and Limitations
 
-> **DRAFT — FOR REVIEW BEFORE PUBLIC RELEASE**
+> **DRAFT - FOR REVIEW BEFORE PUBLIC RELEASE**
 
-## Current input form
+## Mathematical input form
 
-The current optimized performance line operates on **exact dyadic inputs** of the form
+The current kernel program targets exact rational inputs
 
-`a = A / 2^k`.
+`x = p / q`, with `q > 0`,
 
-Both positive and negative arguments are supported in the tested campaigns.
+including genuine non-dyadic rationals.
+
+Both positive and negative arguments are covered by the current comparative qualification.
 
 ## Current benchmarked scope
 
-The final same-runner optimized-kernel-vs-FLINT 3.6.0 evidence covers:
+Current same-runner evidence against FLINT 3.6.0 covers:
 
-- `0 < |a| < 1`;
-- `1 < |a| < 100`;
-- 10,000, 20,000 and 100,000 decimal digits;
-- 100 positive + 100 negative deterministic random inputs per domain and precision;
-- single-threaded execution;
-- repeated evaluation with reusable initialized state.
+- `0 < |x| < 1`;
+- `1 < |x| < 100`;
+- 10,000 and 20,000 decimal digits;
+- 100 exact non-dyadic rationals per domain/precision block;
+- 50 positive + 50 negative per block;
+- one thread;
+- five timing repetitions per input.
 
-Across those two campaigns, **1,200 / 1,200 benchmark cases passed exact-rounded agreement and directed-MPFR certification**.
+Across these four blocks, **400 / 400 cases passed both reported correctness gates and 400 / 400 were faster than FLINT**.
 
-## Endurance-tested scope
+## Current benchmark input-height envelope
 
-The final 10M endurance qualification used:
+The current qualification generator used:
 
-- 10,000 decimal digits;
-- exact dyadics with denominator `2^20`;
-- a deterministic mixed workload spanning `+(0,1)`, `-(0,1)`, `+(1,100)` and `-(1,100)`;
-- one persistent process and reusable initialized state.
+- positive denominators in `[3, 2^31)`;
+- reduced fractions only;
+- non-power-of-two denominators only;
+- machine-word signed numerators generated to satisfy the target magnitude band.
 
-It completed **10,000,000 / 10,000,000 calls** with zero invalid outputs and zero sampled correctness failures.
-
-## Implementation eligibility versus validated performance scope
-
-For an exact dyadic `A/2^k`, the current hard eligibility conditions are:
-
-- denominator exponent `0 <= k <= 64`;
-- numerator magnitude fitting within **64 bits**;
-- `bit_length(|A|) - k <= 20`.
-
-The last condition implies a current implementation magnitude ceiling of
-
-**`|a| < 2^20` (approximately 1,048,576)**,
-
-subject to the other numerator/denominator guards above. The same magnitude rule applies to positive and negative inputs.
-
-This **is an implementation ceiling, not a validated performance envelope**. Current comparative benchmark and endurance evidence extends only through `|a| < 100`. Inputs above 100 but below the implementation ceiling are not rejected merely because they exceed the benchmark range, but they have not yet received the same published performance qualification.
+This is the current published benchmark envelope. It should not be confused with the broader mathematical definition of an exact rational input.
 
 ## Precision
 
-The current headline benchmark set is at **10K, 20K and 100K decimal digits**.
+The current mixed-sign non-dyadic headline qualification is at **10K and 20K decimal digits**.
 
-## Rational form
+Earlier specialized exact-input work includes higher-precision evidence, but it is not mixed into the current generic-rational headline table.
 
-The current fast path is specifically an **exact-dyadic** path. Arbitrary non-power-of-two rational denominators are outside the current headline release claim.
+## Separate endurance-tested scope
+
+The existing 10M endurance qualification used exact dyadic inputs at 10,000 digits. It completed 10,000,000 / 10,000,000 calls with zero invalid outputs and zero sampled correctness failures. That result remains useful stability evidence but is not generic-rational endurance qualification.
 
 ## Setup and repeated-call behavior
 
-The optimized evaluator performs reusable setup before repeated evaluation. Current performance reporting therefore gives both:
-
-- steady-state evaluation speedup; and
-- a conservative setup-amortized speedup that assigns 1/200 of shared setup cost to each call in the benchmark batch.
-
-Both versions of the aggregate comparison favored the optimized kernel in every reported sign/precision block.
+Current benchmark reporting separates one-time run setup from repeated per-input timing and additionally reports a 100-call ratio with one complete setup charged to the batch.
 
 ## Current non-goals
 
 This prototype should not be represented as:
 
-- a universal replacement for `arb_exp`;
-- a claim about arbitrary rational denominators;
-- a performance guarantee for every magnitude permitted by internal eligibility checks;
-- a multi-thread scaling result;
+- a universal replacement for every exponential implementation;
+- a proof covering every exact rational height;
 - a cross-platform performance guarantee;
-- a claim that 10M successful calls prove failures are impossible.
+- a multi-thread scaling result;
+- a comparative performance claim outside the documented magnitude and precision bands;
+- a claim that the existing 10M endurance run used non-dyadic rationals.
 
-The intended commercial use is a specialized acceleration path with a general-purpose fallback outside the validated dispatch region.
+## Disclosure boundary
 
-## Confidentiality boundary
-
-The public scope deliberately omits the internal mathematical construction, representation and optimization architecture.
+The public scope document discloses no internal mathematical or implementation method.

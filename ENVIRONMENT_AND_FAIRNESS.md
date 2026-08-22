@@ -1,80 +1,69 @@
 # Benchmark Environment and Fairness
 
-> **DRAFT — FOR REVIEW BEFORE PUBLIC RELEASE**
+> **DRAFT - FOR REVIEW BEFORE PUBLIC RELEASE**
 
-## Current benchmark environment
+## Environment
 
-The final optimized-kernel-vs-FLINT 3.6.0 comparisons were executed in GitHub Actions on:
+The current mixed-sign non-dyadic comparisons were executed in GitHub Actions on:
 
 - runner image: **Ubuntu 24.04**;
 - architecture: **x86-64**;
 - execution: **single-threaded**;
-- optimized-kernel compile optimization level/target: `-O3 -march=x86-64-v2 -DNDEBUG`;
+- kernel build profile: `-O3 -march=x86-64-v2 -DNDEBUG`;
 - comparator: **FLINT 3.6.0 `arb_exp`**;
 - timing repetitions: **5 per input**;
-- GMP/MPFR supplied by the Ubuntu runner environment;
-- FLINT 3.6.0 built in the Actions environment and reused through the workflow cache.
+- GMP/MPFR supplied by the runner environment;
+- FLINT 3.6.0 restored from the established workflow cache.
 
-Each precision/domain comparison timed the optimized kernel and FLINT on the **same hosted runner job**. Absolute times can vary across hosted runners, so the same-job FLINT/kernel ratio is the primary performance quantity.
+Kernel and FLINT were timed in the **same hosted-runner job** for each block. Because hosted-runner absolute times can vary, the same-job FLINT/kernel ratio is the primary comparative quantity.
 
-## Current benchmark workloads
+## Workloads
 
-### Unit domain
+### `0 < |x| < 1`
 
-- precision: 10K, 20K, 100K decimal digits;
-- denominator: `2^32`;
-- positive: 100 deterministic random reduced dyadics in `(0,1)`;
-- negative: 100 deterministic random reduced dyadics in `(-1,0)`;
-- seed: `2026082202`.
+- precision: 10K and 20K decimal digits;
+- 100 exact reduced non-dyadic rationals per precision;
+- 50 positive + 50 negative;
+- per sign: 25 odd denominators + 25 even non-power-of-two denominators;
+- seed: `202608220901`.
 
-### Wide domain
+### `1 < |x| < 100`
 
-- precision: 10K, 20K, 100K decimal digits;
-- denominator: `2^20`;
-- positive: 100 deterministic random reduced dyadics in `(1,100)`;
-- negative: 100 deterministic random reduced dyadics in `(-100,-1)`;
-- seed: `2026082201`.
+- precision: 10K and 20K decimal digits;
+- 100 exact reduced non-dyadic rationals per precision;
+- 50 positive + 50 negative;
+- per sign: 25 odd denominators + 25 even non-power-of-two denominators;
+- seed: `202608220902`.
 
-## Comparator construction
+Denominators were sampled below `2^31`, fractions were reduced, and power-of-two denominators were rejected.
 
-The workflow builds official FLINT 3.6.0 and compiles a small C helper around `arb_exp`. For each case, the exact dyadic input is constructed outside the timed repeated `arb_exp` loop and the median of five calls is reported.
+## Timing fairness
 
-The optimized-kernel side similarly performs reusable initialization outside the timed hot-path measurements.
+For each exact input, both implementations received the same rational value and requested precision. Input parsing/construction was outside the repeated function timing. The median of five calls was used for each implementation.
 
-## Setup transparency
-
-Because the optimized evaluator has reusable setup, results are reported in two forms:
-
-1. **steady-state:** hot evaluation time only;
-2. **setup-amortized:** one-time shared setup divided by the 200 cases in that domain/precision batch and added to each optimized-kernel call.
-
-The setup-amortized comparison is deliberately included so the speedup is not dependent on hiding initialization cost.
+A one-time kernel setup is reported separately. `PERFORMANCE_RESULTS.md` provides both repeated-call ratios and a conservative 100-call ratio after charging one complete setup to the batch.
 
 ## Correctness gate
 
-A case is accepted only when the optimized-kernel result passes both:
+Every accepted benchmark case passed:
 
-- exact-rounded reference agreement; and
-- independent higher-precision directed-MPFR certification.
+- interval overlap with FLINT at requested precision; and
+- independent higher-precision containment checking from the exact rational input.
 
-The two final campaigns produced **1,200 / 1,200 certified cases**.
+Current total: **400 / 400 cases passed both gates**.
 
-## Endurance environment
+## Hosted-runner interpretation
 
-The final endurance run was also executed on GitHub-hosted Ubuntu 24.04, using the frozen optimized candidate, one persistent process and reusable initialized state. It used 10,000 decimal digits, denominator `2^20`, deterministic seed `2026082203`, and 10,000,000 production calls.
+GitHub-hosted runners are virtualized and may differ in physical CPU assignment, frequency behavior and contention. Therefore:
 
-The endurance harness is a different workload from the FLINT benchmark harness. Its absolute throughput is therefore reported as stability evidence only and is not mixed into the FLINT/kernel speedup tables.
-
-## Interpretation limits
-
-GitHub-hosted runners are virtualized and may vary in physical CPU allocation, frequency behavior and contention. Consequently:
-
-- do not treat small absolute timing differences between separate Actions runs as code regressions without a same-runner comparator;
+- do not infer a regression from small absolute timing changes across separate runs without a same-job comparator;
 - use same-job FLINT/kernel ratios for performance claims;
-- keep endurance/stability evidence separate from comparative benchmark evidence.
+- keep endurance throughput separate from comparative benchmark ratios.
 
-The current public evidence is single-threaded and Linux/x86-64. Customer hardware and additional platforms should be validated independently before deployment-specific guarantees are made.
+## Separate endurance environment
 
-## Confidentiality boundary
+The 10M endurance record was also produced on GitHub-hosted Ubuntu 24.04 in one persistent process at 10K digits. Its workload used exact dyadic inputs and is reported only as stability evidence.
 
-The public benchmark record intentionally omits internal algorithm names, representation details, compile-time architecture parameters and research source identities.
+## Disclosure boundary
+
+No internal method is described in this public benchmark record.

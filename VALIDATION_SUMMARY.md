@@ -1,40 +1,33 @@
 # Validation Summary
 
-> **DRAFT — FOR REVIEW BEFORE PUBLIC RELEASE**
+> **DRAFT - FOR REVIEW BEFORE PUBLIC RELEASE**
 
-## Current qualified candidate
+## Current non-dyadic benchmark qualification
 
-The current benchmarked candidate is the **optimized exact-dyadic EXP kernel**. The final validation evidence is tied to this candidate rather than to earlier experimental packages.
+The current comparative qualification consists of four 100-case exact-rational blocks:
 
-## Benchmark correctness gates
+- `0 < |x| < 1` at 10K digits;
+- `0 < |x| < 1` at 20K digits;
+- `1 < |x| < 100` at 10K digits;
+- `1 < |x| < 100` at 20K digits.
 
-Every case in the final optimized-kernel-vs-FLINT campaign had to pass both of the following before its timing result was accepted:
+Each block contains 50 positive and 50 negative reduced exact non-dyadic rationals.
 
-1. exact-rounded agreement with the requested-precision MPFR reference;
-2. independent higher-precision directed-MPFR certification.
+For every case, the candidate result had to pass:
 
-Two deterministic campaigns were run at 10,000, 20,000 and 100,000 decimal digits:
+1. overlap with the same-input FLINT result at requested precision; and
+2. independent higher-precision containment checking from the exact rational input.
 
-- `0 < |a| < 1`: 100 positive + 100 negative inputs per precision;
-- `1 < |a| < 100`: 100 positive + 100 negative inputs per precision.
+Current result:
 
-Final correctness result:
+- **400 / 400 overlap checks passed**;
+- **400 / 400 containment checks passed**;
+- **400 / 400 cases were faster than FLINT 3.6.0** in their same-runner per-input comparisons;
+- observed correctness failures: **0**.
 
-- unit domain: **600 / 600 passed**;
-- wide domain: **600 / 600 passed**;
-- combined current benchmark set: **1,200 / 1,200 passed**;
-- observed benchmark correctness failures: **0**.
+## Separate 10M endurance qualification
 
-## Final 10M endurance qualification
-
-A separate persistent-process endurance test exercised the frozen optimized candidate at **10,000 decimal digits** over a mixed exact-dyadic workload spanning:
-
-- `+(0,1)`;
-- `-(0,1)`;
-- `+(1,100)`;
-- `-(1,100)`.
-
-The run used denominator `2^20`, 256 preflight inputs and deterministic seed `2026082203`.
+A separate previously frozen evaluator completed a persistent-process endurance test at **10,000 decimal digits** using a deterministic exact-dyadic mixed workload across positive/negative unit and wide bands.
 
 Result:
 
@@ -43,33 +36,35 @@ Result:
 - preflight correctness: **256 / 256 passed**;
 - sampled directed-MPFR checks: **10,000 / 10,000 passed**;
 - correctness failures: **0**;
-- one-time reusable setup: **16.192 ms**;
 - production runtime: **1,231.122 s**;
-- production throughput: **8,122.7 calls/s**;
+- throughput: **8,122.7 calls/s**;
 - RSS start/end: **5,960 KB -> 6,168 KB**;
 - RSS at 1M and 10M: **6,168 KB -> 6,168 KB**.
 
-The memory checkpoints show the working set reaching a plateau by the 1M checkpoint and remaining unchanged through 10M calls in this run.
+The endurance workload is deliberately not relabeled as non-dyadic qualification.
 
-## What this evidence means
+## What the current evidence supports
 
-The current evidence supports the statement that, **within the documented tested regions**, the optimized candidate completed a large repeated-call workload without observed execution or sampled correctness failure and without progressive RSS growth after warm-up.
+Within the documented benchmark bands and precisions, the current exact-rational candidate showed:
 
-The 10M endurance run is deliberately separate from the FLINT speed comparison. Its throughput should not be used as a FLINT benchmark number.
+- complete success on the reported correctness gates;
+- 400/400 per-input wins against same-runner FLINT 3.6.0;
+- closely matched positive and negative aggregate behavior.
 
-## What is not established by this qualification
+The endurance evidence separately supports long-run stability for the stated 10K exact-dyadic workload.
 
-The current qualification does not by itself establish:
+## What remains outside this qualification
 
-- universal correctness for every possible exact dyadic;
+The current evidence does not by itself establish:
+
+- universal correctness for every rational number and every height;
+- arbitrary-height numerator/denominator API qualification;
 - behavior on every CPU, OS or compiler;
 - thread safety or multi-thread scaling;
-- performance outside the documented benchmark regions;
-- arbitrary rational denominators;
+- comparative performance outside `|x| < 100`;
+- generic-rational 10M endurance;
 - production API compatibility for every downstream integration.
 
-Those are separate integration and portability questions rather than unresolved results inside the completed benchmark/endurance campaign.
+## Disclosure boundary
 
-## Confidentiality boundary
-
-This public validation summary deliberately omits the mathematical construction and source-level optimization architecture. It records only observable qualification evidence and operating limits.
+This public validation record contains no internal method.

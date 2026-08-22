@@ -1,81 +1,57 @@
 # Public Technical Overview
 
-> **DRAFT — FOR REVIEW BEFORE PUBLIC RELEASE**
+> **DRAFT - FOR REVIEW BEFORE PUBLIC RELEASE**
 
 ## Purpose
 
-This project evaluates a specialized high-precision kernel for `exp(a)` when the input is represented exactly as a dyadic rational.
+This project evaluates a high-precision kernel for `exp(x)` on exact rational inputs, including non-dyadic rationals.
 
-The current performance candidate is an **optimized exact-dyadic EXP kernel**. This public overview intentionally does not describe the mathematical derivation, internal representation, or source-level optimization architecture.
+This public overview intentionally describes only measurable behavior, validation, tested scope and integration boundaries. **No internal method is disclosed.**
 
 ## Current tested operating region
 
-The final same-runner benchmark campaign covers:
+The current mixed-sign non-dyadic benchmark campaign covers:
 
-- exact dyadic inputs;
+- exact reduced non-dyadic rational inputs;
 - both signs;
-- `0 < |a| < 1` and `1 < |a| < 100`;
-- 10,000, 20,000 and 100,000 decimal digits;
-- single-threaded execution;
-- repeated evaluation with reusable initialized state.
-
-The implementation contains wider eligibility guards than the benchmarked `|a| < 100` region, but the public performance claim is intentionally limited to the regions actually benchmarked and certified.
+- `0 < |x| < 1` and `1 < |x| < 100`;
+- 10,000 and 20,000 decimal digits;
+- one thread;
+- 100 cases per domain/precision block, split 50 positive + 50 negative.
 
 ## Performance result
 
-Against FLINT 3.6.0 `arb_exp`, every reported sign/precision aggregate block favored the optimized kernel.
+Against same-runner FLINT 3.6.0 `arb_exp`, aggregate FLINT/kernel ratios were:
 
-Steady-state aggregate FLINT/kernel speedups ranged from approximately **4.91x to 7.73x** across the final unit- and wide-domain campaigns. When one-time reusable setup was conservatively amortized over the 200 calls in each benchmark batch, aggregate speedups remained approximately **3.21x to 4.90x**.
+- unit band, 10K: **1.5319x**;
+- unit band, 20K: **1.9233x**;
+- wide band, 10K: **1.4388x**;
+- wide band, 20K: **1.8399x**.
 
-See [`PERFORMANCE_RESULTS.md`](PERFORMANCE_RESULTS.md) for the full table.
+All 400 benchmark cases were individual wins for the kernel.
+
+See `PERFORMANCE_RESULTS.md` for sign splits, means, median ratios and setup accounting.
 
 ## Correctness evidence
 
-The final performance campaigns accepted a timing result only after exact-rounded reference agreement and an independent directed-MPFR check.
+Every reported case passed both overlap and independent higher-precision containment checking.
 
-Across the current benchmark set:
-
-**1,200 / 1,200 cases passed both correctness gates.**
+**400 / 400 cases passed both gates.**
 
 ## Endurance evidence
 
-At 10,000 decimal digits, the optimized candidate completed a separate **10,000,000-call persistent-process endurance test** over a mixed workload covering positive/negative unit-domain and wide-domain inputs.
+A separate exact-dyadic evaluator completed **10,000,000 / 10,000,000 calls at 10K digits**, with 0 invalid outputs, 10,000 / 10,000 sampled directed-MPFR checks passed, and no RSS growth from the 1M checkpoint through 10M.
 
-The run completed:
+That is a separate stability qualification and is not generic-rational endurance evidence.
 
-- 10,000,000 / 10,000,000 successful calls;
-- 0 invalid outputs;
-- 10,000 / 10,000 sampled directed-MPFR checks passed;
-- 0 correctness failures;
-- no progressive RSS growth after the 1M-call checkpoint.
+## Input-height qualification boundary
 
-This endurance result is a stability qualification, not a benchmark against FLINT.
+The current non-dyadic benchmark generator used denominators below `2^31` and machine-word signed numerators. Broader exact-rational height remains a separate qualification dimension.
 
-## Implementation eligibility
+## Reference comparator
 
-For exact dyadic `a=A/2^k`, the current implementation guard requires denominator exponent `0 <= k <= 64`, numerator magnitude within 64 bits, and `bit_length(|A|)-k <= 20`. This implies **`|a| < 2^20` (approximately 1,048,576)** subject to the other guards.
-
-That is an implementation ceiling, not a validated performance envelope. Current comparative evidence extends only through `|a| < 100`.
-
-## Intended use
-
-The natural deployment model is a **narrowly dispatched acceleration path** inside a larger numerical system:
-
-- use the optimized kernel where the input form, magnitude and precision fall inside the validated fast region;
-- retain an incumbent general-purpose exponential implementation as the fallback elsewhere.
-
-## Reference implementation
-
-The current primary benchmark comparator is **FLINT 3.6.0 `arb_exp`**.
-
-Each benchmark precision was run on a GitHub-hosted Ubuntu 24.04 job, with the optimized kernel and FLINT timed on the same runner and identical exact inputs supplied to both implementations.
+The current primary comparator is **FLINT 3.6.0 `arb_exp`**. Each benchmark block timed both implementations on the same GitHub-hosted Ubuntu 24.04 job.
 
 ## Maturity
 
-The benchmark and 10M endurance qualification are complete for the documented test regions. Cross-platform reproduction, customer-specific workloads, multi-thread behavior and production integration remain separate qualification dimensions.
-
-## Confidentiality boundary
-
-This public description intentionally discusses capability, validation, release boundaries and measured behavior only.
-
-It does not disclose the proprietary mathematical derivation, internal representation, or source-level implementation details.
+Current evidence is strong for the documented high-precision single-threaded ranges, while cross-platform reproduction, customer-specific workloads, arbitrary-height API qualification, multi-thread behavior and production integration remain separate activities.

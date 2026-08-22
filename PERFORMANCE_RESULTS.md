@@ -1,89 +1,74 @@
 # Performance Results
 
-> **DRAFT — FOR REVIEW BEFORE PUBLIC RELEASE**
+> **DRAFT - FOR REVIEW BEFORE PUBLIC RELEASE**
 
-This file records the current benchmark set for the **optimized exact-dyadic EXP candidate**.
+This file records the current same-runner benchmark set for exact non-dyadic rational inputs.
 
 All speedups are reported as:
 
-`FLINT 3.6.0 time / optimized-kernel time`
+`FLINT 3.6.0 arb_exp time / kernel time`
 
-A value greater than 1.0 means the optimized kernel was faster.
+A value greater than 1 means the kernel was faster.
 
 ## Benchmark design
 
-Two deterministic exact-dyadic domains were tested at 10,000, 20,000 and 100,000 decimal digits:
+Two magnitude bands were tested at 10,000 and 20,000 decimal digits:
 
-1. **unit domain:** 100 positive inputs in `(0,1)` and 100 negative inputs in `(-1,0)` at each precision, denominator `2^32`, seed `2026082202`;
-2. **wide domain:** 100 positive inputs in `(1,100)` and 100 negative inputs in `(-100,-1)` at each precision, denominator `2^20`, seed `2026082201`.
+1. `0 < |x| < 1`;
+2. `1 < |x| < 100`.
 
-Each input was timed with five repetitions. The optimized kernel and FLINT 3.6.0 were run on the same GitHub Actions job for each precision. The FLINT comparator was the public C-level `arb_exp` routine.
+Each precision/domain block contained **100 deterministic random exact reduced non-dyadic rationals: 50 positive + 50 negative**. Within each sign, 25 denominators were odd and 25 were even but not powers of two. The input generators rejected non-reduced fractions and power-of-two denominators.
 
-Correctness was a hard gate: every benchmark output had to pass exact-rounded agreement and an independent directed-MPFR certification check.
+Seeds:
 
-## Unit domain: `0 < |a| < 1`
+- unit band: `202608220901`;
+- wide band: `202608220902`.
 
-### Steady-state aggregate speedup
+The benchmark generator used denominators in `[3, 2^31)` and machine-word signed numerators. Five timing repetitions per input and one thread were used. FLINT 3.6.0 was restored from the workflow cache and timed in the same GitHub Actions job as the kernel.
 
-| Digits | Positive | Negative |
-|---:|---:|---:|
-| 10,000 | **5.0869x** | **5.0894x** |
-| 20,000 | **5.5481x** | **5.4853x** |
-| 100,000 | **4.9064x** | **4.9601x** |
+Correctness was a hard gate: every reported case passed both interval overlap and an independent higher-precision `arb_contains` containment check from the exact rational input.
 
-### Aggregate speedup including 1/200 of shared setup per call
+## Results
 
-| Digits | Positive | Negative |
-|---:|---:|---:|
-| 10,000 | **3.3037x** | **3.2611x** |
-| 20,000 | **3.5690x** | **3.5230x** |
-| 100,000 | **3.2145x** | **3.2396x** |
+| Domain | Digits | Mean kernel ms | Mean FLINT ms | Aggregate FLINT/kernel | Median ratio | Positive aggregate | Negative aggregate |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `0 < |x| < 1` | 10,000 | 0.810155 | 1.241056 | **1.5319x** | **1.5529x** | **1.5431x** | **1.5210x** |
+| `0 < |x| < 1` | 20,000 | 2.060636 | 3.963175 | **1.9233x** | **1.9392x** | **1.9351x** | **1.9119x** |
+| `1 < |x| < 100` | 10,000 | 0.866520 | 1.246729 | **1.4388x** | **1.4321x** | **1.4361x** | **1.4415x** |
+| `1 < |x| < 100` | 20,000 | 1.207725 | 2.222107 | **1.8399x** | **1.8614x** | **1.8471x** | **1.8326x** |
 
-The unit-domain campaign recorded **600 / 600 steady-state wins** and **600 / 600 exact-rounded + directed-MPFR certified cases**.
+Qualification totals:
 
-## Wide domain: `1 < |a| < 100`
+- cases: **400**;
+- wins vs FLINT: **400 / 400**;
+- overlap checks: **400 / 400**;
+- independent containment checks: **400 / 400**;
+- observed benchmark correctness failures: **0**.
 
-### Steady-state aggregate speedup
+## Setup transparency
 
-| Digits | Positive | Negative |
-|---:|---:|---:|
-| 10,000 | **7.1336x** | **7.4786x** |
-| 20,000 | **7.7109x** | **7.7258x** |
-| 100,000 | **7.2250x** | **7.2949x** |
+A one-time setup is performed for each fixed-precision benchmark run. Headline per-input timings exclude that one-time cost. The measured setup and the conservative 100-call batch ratio after charging one full setup are:
 
-### Aggregate speedup including 1/200 of shared setup per call
+| Domain | Digits | One-time setup ms | FLINT/kernel including one setup over 100 calls |
+|---|---:|---:|---:|
+| `0 < |x| < 1` | 10,000 | 23.098788 | **1.1920x** |
+| `0 < |x| < 1` | 20,000 | 57.381607 | **1.5044x** |
+| `1 < |x| < 100` | 10,000 | 23.003177 | **1.1370x** |
+| `1 < |x| < 100` | 20,000 | 31.926928 | **1.4552x** |
 
-| Digits | Positive | Negative |
-|---:|---:|---:|
-| 10,000 | **4.0689x** | **4.1357x** |
-| 20,000 | **4.8963x** | **4.8765x** |
-| 100,000 | **4.6113x** | **4.6304x** |
+The setup-charged ratio remains greater than 1 in all four blocks.
 
-The wide-domain campaign produced **600 / 600 exact-rounded + directed-MPFR certified cases**. Every sign/precision aggregate block favored the optimized kernel.
+## Run references
 
-## Combined current benchmark evidence
+- unit 10K: GitHub Actions run `32589611436`;
+- unit 20K: run `32589679452`;
+- wide 10K: run `32589803242`;
+- wide 20K: run `32589953714`.
 
-Across the two final campaigns:
+## Separate endurance evidence
 
-- benchmark cases: **1,200**;
-- certified cases: **1,200 / 1,200**;
-- tested precision: **10K, 20K, 100K decimal digits**;
-- signs: **positive and negative**;
-- tested magnitude regions: **`0 < |a| < 1` and `1 < |a| < 100`**;
-- threads: **1**.
+The 10M endurance record at 10,000 digits used a different exact-input workload and harness. It is stability evidence, not part of the FLINT ratio table. See `VALIDATION_SUMMARY.md`.
 
-The strongest aggregate steady-state block in this set was approximately **7.73x** FLINT/kernel at 20,000 digits in the negative wide-domain sample. The smallest current steady-state aggregate block was approximately **4.91x**, still in favor of the optimized kernel.
+## Disclosure boundary
 
-## Setup interpretation
-
-The implementation performs reusable one-time setup before repeated evaluation. The steady-state figures exclude that setup from individual hot-path timings. To make the setup cost visible, the benchmark also reports an intentionally conservative amortization of **1/200 of total shared setup cost per call**, corresponding to the 200-case batch.
-
-The setup-amortized results remain favorable in every reported sign/precision block.
-
-## Endurance throughput is not a benchmark ratio
-
-The separate 10M endurance run at 10,000 digits produced **8,122.7 calls/s** over a mixed four-region workload. That figure belongs to a different qualification harness and must not be compared directly with the FLINT benchmark ratios above.
-
-## Confidentiality boundary
-
-This document intentionally reports observable benchmark behavior only. It does not describe the internal mathematical construction, data representation, recoding strategy, cached objects, or source-level optimization architecture.
+Only observable benchmark behavior and methodology are reported here. **No internal method is disclosed.**
