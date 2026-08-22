@@ -2,17 +2,17 @@
 
 > **DRAFT — FOR REVIEW BEFORE PUBLIC RELEASE**
 
-Experimental high-precision software for evaluating `exp(a)` on exact dyadic inputs, with independent correctness certification and a specialized cached fast path for repeated high-precision work.
+Experimental high-precision software for evaluating `exp(a)` on exact dyadic inputs, with independent correctness certification and a specialized optimized path for repeated high-precision work.
 
-## Current performance line: SW6
+## Current performance line
 
-The current benchmarked candidate is the **signed-window-6 (SW6) cached EXP kernel**. The underlying mathematical spine remains the certified n=2 EXP engine; SW6 changes representation and reusable evaluation structure rather than replacing the mathematical construction.
+The current benchmarked candidate is the **optimized exact-dyadic EXP kernel**. Proprietary mathematical and implementation details are intentionally not disclosed in this public repository.
 
 The current headline evidence is from same-runner comparisons against **FLINT 3.6.0 `arb_exp`** on GitHub-hosted Ubuntu 24.04, one thread, five timing repetitions per input, with identical exact inputs and requested precision supplied to both implementations.
 
-### Final SW6 vs FLINT 3.6.0 benchmark set
+### Final optimized-kernel vs FLINT 3.6.0 benchmark set
 
-`FLINT / SW6` greater than 1 means SW6 was faster.
+`FLINT / kernel` greater than 1 means the optimized kernel was faster.
 
 | Domain | Digits | Positive steady-state | Negative steady-state | Positive incl. amortized setup | Negative incl. amortized setup |
 |---|---:|---:|---:|---:|---:|
@@ -29,7 +29,7 @@ See [`PERFORMANCE_RESULTS.md`](PERFORMANCE_RESULTS.md) and [`ENVIRONMENT_AND_FAI
 
 ## Final endurance qualification
 
-The frozen SW6 candidate also completed a **10,000,000-call persistent-process endurance run at 10,000 decimal digits** over a mixed workload spanning all four tested regions:
+The frozen optimized candidate completed a **10,000,000-call persistent-process endurance run at 10,000 decimal digits** over a mixed workload spanning all four tested regions:
 
 - `+(0,1)`
 - `-(0,1)`
@@ -45,7 +45,7 @@ Result:
 - **0 correctness failures**
 - production time: **1,231.122 s**
 - throughput: **8,122.7 calls/s**
-- SW6 cache setup: **16.19 ms**
+- one-time reusable setup: **16.19 ms**
 - RSS: **5,960 KB -> 6,168 KB**, with RSS unchanged from the 1M checkpoint through 10M
 
 This is an endurance/stability qualification, not a speed comparison against FLINT. Benchmark and endurance evidence are intentionally kept separate.
@@ -58,10 +58,10 @@ The current published evidence covers:
 - both positive and negative arguments;
 - benchmark regions `0 < |a| < 1` and `1 < |a| < 100`;
 - 10,000, 20,000 and 100,000 decimal-digit benchmark precision;
-- single-threaded repeated evaluation with reusable SW6 cache state;
+- single-threaded repeated evaluation with reusable initialized state;
 - independent directed-MPFR correctness verification.
 
-The implementation contains eligibility guards wider than the benchmarked `|a| < 100` region, but those wider bounds are not presented here as equally validated performance claims.
+The current implementation accepts a wider exact-dyadic envelope than the benchmarked `|a| < 100` region. The hard implementation eligibility conditions include denominator exponent `0 <= k <= 64`, numerator magnitude within 64 bits, and `bit_length(|A|)-k <= 20`, implying **`|a| < 2^20` (about 1,048,576)** subject to the other guards. This is an implementation limit, not a performance claim beyond the tested region.
 
 ## Intended deployment model
 
@@ -69,13 +69,9 @@ This kernel is best treated as a **specialized acceleration path** inside a broa
 
 It is not presented as a universal replacement for every exponential workload or every precision regime.
 
-## Historical evidence
-
-Earlier direct-kernel, recovered-dyadic and large-magnitude experiments remain part of the research provenance, but they are **not the current headline benchmark set**. Current performance claims in this repository refer to the final SW6 campaign above unless explicitly labeled historical.
-
 ## Proprietary details
 
-The public repository describes capability, benchmark methodology, validation, tested operating ranges and limitations. Proprietary mathematical derivation and implementation details are intentionally omitted.
+The public repository describes capability, benchmark methodology, validation, tested operating ranges and limitations. Proprietary mathematical derivation, algorithmic architecture and implementation details are intentionally omitted.
 
 ## Documentation
 
@@ -87,8 +83,8 @@ The public repository describes capability, benchmark methodology, validation, t
 
 ## Status
 
-**SW6 benchmark and 10M endurance qualification complete for the documented exact-dyadic test regions.** External/customer-specific validation, additional platforms, and integration hardening remain separate deployment activities.
+**Benchmark and 10M endurance qualification are complete for the documented exact-dyadic test regions.** External/customer-specific validation, additional platforms, and integration hardening remain separate deployment activities.
 
 ## Version
 
-Draft public package: **0.2.0-draft-sw6-qualified**
+Draft public package: **0.2.0-draft-qualified**
