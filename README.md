@@ -2,83 +2,80 @@
 
 > **DRAFT — FOR REVIEW BEFORE PUBLIC RELEASE**
 
-Experimental high-precision software for computing `exp(a)` when the input is an exact rational number.
+Experimental high-precision software for evaluating `exp(a)` on exact dyadic inputs, with independent correctness certification and a specialized cached fast path for repeated high-precision work.
 
-The project evaluates a specialized fast path for exact-rational inputs at high precision. The kernel returns a certified numerical interval containing the true result and has been benchmarked against FLINT 3.6.0 `arb_exp`.
+## Current performance line: SW6
 
-## Current canonical release line
+The current benchmarked candidate is the **signed-window-6 (SW6) cached EXP kernel**. The underlying mathematical spine remains the certified n=2 EXP engine; SW6 changes representation and reusable evaluation structure rather than replacing the mathematical construction.
 
-The **current canonical executable is the rigorous direct kernel only**.
+The current headline evidence is from same-runner comparisons against **FLINT 3.6.0 `arb_exp`** on GitHub-hosted Ubuntu 24.04, one thread, five timing repetitions per input, with identical exact inputs and requested precision supplied to both implementations.
 
-It does **not** yet include the later large-magnitude reduction/dispatch layer explored and validated in the broader research campaign. Large input magnitude is therefore a known performance weakness of the current direct release; this is a performance limitation, not a known correctness failure.
+### Final SW6 vs FLINT 3.6.0 benchmark set
 
-A current-build smoke test at 5,000 decimal digits deliberately included `a = 100`. The result passed higher-precision Arb containment, while the direct kernel was slower than FLINT on that case (`ours / FLINT = 1.1874`).
+`FLINT / SW6` greater than 1 means SW6 was faster.
 
-Separately, the present exact-rational interface is limited to machine-word-sized numerator/denominator components (approximately 64-bit), and performance degrades as rational height approaches that ceiling.
+| Domain | Digits | Positive steady-state | Negative steady-state | Positive incl. amortized setup | Negative incl. amortized setup |
+|---|---:|---:|---:|---:|---:|
+| `0 < |a| < 1` | 10,000 | **5.0869x** | **5.0894x** | **3.3037x** | **3.2611x** |
+| `0 < |a| < 1` | 20,000 | **5.5481x** | **5.4853x** | **3.5690x** | **3.5230x** |
+| `0 < |a| < 1` | 100,000 | **4.9064x** | **4.9601x** | **3.2145x** | **3.2396x** |
+| `1 < |a| < 100` | 10,000 | **7.1336x** | **7.4786x** | **4.0689x** | **4.1357x** |
+| `1 < |a| < 100` | 20,000 | **7.7109x** | **7.7258x** | **4.8963x** | **4.8765x** |
+| `1 < |a| < 100` | 100,000 | **7.2250x** | **7.2949x** | **4.6113x** | **4.6304x** |
 
-See [`SUPPORTED_SCOPE.md`](SUPPORTED_SCOPE.md) for the distinction between **large argument magnitude** and **large rational height**.
+Each domain campaign used 100 positive and 100 negative deterministic random exact dyadics at each of the three precisions. Across the two campaigns, **1,200 / 1,200 benchmark cases passed both exact-rounded overlap and independent directed-MPFR certification**. The unit-domain campaign recorded **600 / 600 steady-state wins** against FLINT.
 
-## Research-campaign evidence
+See [`PERFORMANCE_RESULTS.md`](PERFORMANCE_RESULTS.md) and [`ENVIRONMENT_AND_FAIRNESS.md`](ENVIRONMENT_AND_FAIRNESS.md) for the exact interpretation of steady-state and setup-amortized ratios.
 
-The broader validation campaign covers:
+## Final endurance qualification
 
-- requested precision from **1,000 to 500,000 decimal digits**;
-- positive and negative exact-rational inputs;
-- more than **1,000 correctness-checked evaluations** across the full research campaign;
-- independent higher-precision containment checks;
-- direct-kernel testing and, separately, a later experimental large-magnitude extension.
+The frozen SW6 candidate also completed a **10,000,000-call persistent-process endurance run at 10,000 decimal digits** over a mixed workload spanning all four tested regions:
 
-The historical combined direct/extended dispatcher campaign over the original 400-case random set plus a 12-case large-integer range produced:
+- `+(0,1)`
+- `-(0,1)`
+- `+(1,100)`
+- `-(1,100)`
 
-- **411 / 412 wins** against the reference implementation;
-- **0 correctness failures**.
+Result:
 
-Those **411 / 412** results belong to the broader historical research campaign. They are **not measurements of the current direct-only canonical executable**.
+- **10,000,000 / 10,000,000 successful calls**
+- **0 invalid outputs**
+- **256 / 256 preflight correctness checks passed**
+- **10,000 / 10,000 sampled directed-MPFR checks passed**
+- **0 correctness failures**
+- production time: **1,231.122 s**
+- throughput: **8,122.7 calls/s**
+- SW6 cache setup: **16.19 ms**
+- RSS: **5,960 KB -> 6,168 KB**, with RSS unchanged from the 1M checkpoint through 10M
 
-The one residual historical loss belongs to a narrow input subclass described in [`SUPPORTED_SCOPE.md`](SUPPORTED_SCOPE.md).
+This is an endurance/stability qualification, not a speed comparison against FLINT. Benchmark and endurance evidence are intentionally kept separate.
 
-## Precision scaling
+## Current tested scope
 
-On a fixed six-input representative set from the documented research campaign:
+The current published evidence covers:
 
-| Decimal digits | Geometric-mean time ratio | Median time ratio | Wins |
-|---:|---:|---:|---:|
-| 1,000 | 0.82 | 0.89 | 4 / 6 |
-| 2,000 | 0.75 | 0.77 | 5 / 6 |
-| 5,000 | 0.61 | 0.64 | 6 / 6 |
-| 10,000 | 0.47 | 0.49 | 6 / 6 |
-| 20,000 | 0.38 | 0.41 | 6 / 6 |
-| 50,000 | 0.36 | 0.37 | 6 / 6 |
-| 100,000 | 0.36 | 0.33 | 6 / 6 |
-| 200,000 | 0.33 | 0.29 | 6 / 6 |
+- exact dyadic inputs;
+- both positive and negative arguments;
+- benchmark regions `0 < |a| < 1` and `1 < |a| < 100`;
+- 10,000, 20,000 and 100,000 decimal-digit benchmark precision;
+- single-threaded repeated evaluation with reusable SW6 cache state;
+- independent directed-MPFR correctness verification.
 
-`ratio = prototype time / FLINT time`; values below 1.0 mean the prototype was faster.
+The implementation contains eligibility guards wider than the benchmarked `|a| < 100` region, but those wider bounds are not presented here as equally validated performance claims.
 
-The advantage was not universal at very low precision. From approximately 5,000 digits upward, every value in this representative precision-scaling set won.
+## Intended deployment model
 
-## Certification
+This kernel is best treated as a **specialized acceleration path** inside a broader numerical system. A general-purpose implementation can remain as the fallback outside the documented dispatch region.
 
-Every reported benchmark result was required to satisfy the requested accuracy and to agree with the reference interval.
+It is not presented as a universal replacement for every exponential workload or every precision regime.
 
-A separate higher-precision verification of the documented direct-kernel campaign reports **40 / 40 containment checks passed**.
+## Historical evidence
 
-The current canonical direct executable also includes a higher-precision Arb containment check in its evaluation driver.
-
-## Current deployment profile
-
-The current direct release is most suitable for:
-
-- exact-rational inputs;
-- numerator and denominator well within the implementation's current machine-word capacity;
-- moderate input magnitude, pending integration of the later magnitude-reduction layer;
-- precision of at least a few thousand decimal digits;
-- single-threaded high-precision numerical workloads.
-
-It is **not** presented as a universal replacement for a general-purpose exponential implementation.
+Earlier direct-kernel, recovered-dyadic and large-magnitude experiments remain part of the research provenance, but they are **not the current headline benchmark set**. Current performance claims in this repository refer to the final SW6 campaign above unless explicitly labeled historical.
 
 ## Proprietary details
 
-The public repository describes capability, validation results, tested operating ranges, release boundaries, and limitations. Proprietary mathematical and implementation details are intentionally omitted.
+The public repository describes capability, benchmark methodology, validation, tested operating ranges and limitations. Proprietary mathematical derivation and implementation details are intentionally omitted.
 
 ## Documentation
 
@@ -90,10 +87,8 @@ The public repository describes capability, validation results, tested operating
 
 ## Status
 
-**Experimental prototype — current canonical line is the rigorous direct kernel; large-magnitude extension remains separate future integration work.**
-
-Cross-machine portability, broader adversarial testing, integration of the validated large-magnitude strategy into the current canonical source line, and a wider-than-machine-word rational front end remain open work before any claim of general deployment readiness.
+**SW6 benchmark and 10M endurance qualification complete for the documented exact-dyadic test regions.** External/customer-specific validation, additional platforms, and integration hardening remain separate deployment activities.
 
 ## Version
 
-Draft public package: **0.1.1-draft-direct-synchronized**
+Draft public package: **0.2.0-draft-sw6-qualified**
