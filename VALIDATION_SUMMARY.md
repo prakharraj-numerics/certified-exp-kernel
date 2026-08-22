@@ -2,50 +2,74 @@
 
 > **DRAFT — FOR REVIEW BEFORE PUBLIC RELEASE**
 
-## Correctness checks used
+## Current qualified candidate
 
-Reported benchmark cases in the broader research campaign were checked for:
+The current benchmarked candidate is the **signed-window-6 (SW6) cached EXP kernel** for exact dyadic inputs. The final validation evidence is tied to this candidate rather than to the earlier direct-only or recovered-dyadic benchmark packages.
 
-1. agreement/overlap with the reference library result;
-2. requested relative accuracy;
-3. rigorous interval certification.
+## Benchmark correctness gates
 
-The broader research campaign reports more than 1,000 correctness-checked evaluations.
+Every case in the final SW6-vs-FLINT campaign had to pass both of the following before its timing result was accepted:
 
-## Current canonical direct release
+1. exact-rounded agreement with the requested-precision MPFR reference;
+2. independent higher-precision directed-MPFR certification.
 
-The current canonical executable is the **rigorous direct kernel only**. Its evaluation driver performs a higher-precision Arb recomputation and checks containment with `arb_contains`.
+Two deterministic campaigns were run at 10,000, 20,000 and 100,000 decimal digits:
 
-A current-build smoke gate tested `1/3`, `13/10`, `-10`, and `100` at 5,000 decimal digits. All four returned successful containment. The `a = 100` case was deliberately retained even though the direct kernel was slower than FLINT, because large argument magnitude is a known performance weakness of the current direct-only release.
+- `0 < |a| < 1`: 100 positive + 100 negative inputs per precision;
+- `1 < |a| < 100`: 100 positive + 100 negative inputs per precision.
 
-## Independent verification in the documented direct campaign
+Final correctness result:
 
-A stronger verification pass recomputed selected direct-kernel cases from scratch at higher precision and checked that the lower-precision certified result contained the tighter recomputation.
+- unit domain: **600 / 600 passed**;
+- wide domain: **600 / 600 passed**;
+- combined current benchmark set: **1,200 / 1,200 passed**;
+- observed benchmark correctness failures: **0**.
 
-For the documented direct kernel:
+## Final 10M endurance qualification
 
-- **40 / 40 higher-precision containment checks passed**.
+A separate persistent-process endurance test exercised the frozen SW6 candidate at **10,000 decimal digits** over a mixed exact-dyadic workload spanning:
 
-## Historical large-magnitude extension
+- `+(0,1)`;
+- `-(0,1)`;
+- `+(1,100)`;
+- `-(1,100)`.
 
-A later large-magnitude extension was developed and validated in the broader research campaign, but it is **not included in the current canonical direct executable**.
+The run used denominator `2^20`, 256 preflight inputs and deterministic seed `2026082203`.
 
-During development, a dedicated rigor sweep exposed a working-precision-margin problem. The affected results still overlapped and contained the reference value, but some did not meet the requested accuracy margin. The guard policy was corrected and the same 27-case sweep then passed **27 / 27**.
+Result:
 
-This history is retained because it is evidence that validation was used to find real defects rather than merely confirm expected results. It should not be read as a statement that the later extension is already integrated into the current public release line.
+- calls: **10,000,000 / 10,000,000 successful**;
+- invalid outputs: **0**;
+- preflight correctness: **256 / 256 passed**;
+- sampled directed-MPFR checks: **10,000 / 10,000 passed**;
+- correctness failures: **0**;
+- SW6 cache setup: **16.192 ms**;
+- production runtime: **1,231.122 s**;
+- production throughput: **8,122.7 calls/s**;
+- RSS start/end: **5,960 KB -> 6,168 KB**;
+- RSS at 1M and 10M: **6,168 KB -> 6,168 KB**.
 
-## Certification model
+The memory checkpoints show the working set reaching a plateau by the 1M checkpoint and remaining unchanged through 10M calls in this run.
 
-The public package does not disclose the internal derivation of the error bound.
+## What this evidence means
 
-The current evidence supports only the following public claim:
+The current evidence supports the statement that, **within the documented tested regions**, the SW6 candidate completed a large repeated-call workload without observed execution or sampled correctness failure and without progressive RSS growth after warm-up.
 
-**the direct kernel returns a certified numerical interval, and the documented validation campaigns observed zero correctness failures after the recorded fixes.**
+The 10M endurance run is deliberately separate from the FLINT speed comparison. Its throughput should not be used as a FLINT benchmark number.
 
-## Remaining validation and integration gaps
+## What is not established by this qualification
 
-- integration of the validated large-magnitude strategy into the current canonical source line;
-- cross-machine verification;
-- microarchitectural profiling;
-- a broader adversarial sweep, including additional unusual rational structures and bit-pattern cases;
-- a wider-than-machine-word rational input front end.
+The current qualification does not by itself establish:
+
+- universal correctness for every possible exact dyadic;
+- behavior on every CPU, OS or compiler;
+- thread safety or multi-thread scaling;
+- performance outside the documented benchmark regions;
+- arbitrary rational denominators;
+- production API compatibility for every downstream integration.
+
+Those are separate integration and portability questions rather than unresolved results inside the completed SW6 benchmark/endurance campaign.
+
+## Historical validation
+
+Older direct-kernel and large-magnitude-extension campaigns remain part of the research record, including higher-precision containment work and earlier bug-finding validation. They are historical provenance, not the current headline qualification.
